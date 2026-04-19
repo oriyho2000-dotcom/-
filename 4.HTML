@@ -1,0 +1,183 @@
+ HTML.3
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ספר טלפונים עם תמונות</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        input { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .file-input { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: #666; }
+        
+        .actions { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: #27ae60; color: white; }
+        .btn-update { background: #f39c12; color: white; display: none; }
+        .btn-cancel { background: #95a5a6; color: white; display: none; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #eee; vertical-align: middle; }
+        th { background: #f8f9fa; }
+        
+        .contact-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd; }
+        .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; border-radius: 5px; }
+        .btn-edit { background: #3498db; color: white; padding: 5px 10px; border-radius: 5px; margin-left: 5px; }
+        .search-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #3498db; border-radius: 8px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ספר טלפונים עם תמונות</h2>
+    
+    <input type="text" id="searchInput" class="search-box" placeholder="חיפוש חופשי (שם, טלפון, אימייל)..." onkeyup="renderTable()">
+
+    <div class="form-grid">
+        <input type="text" id="firstName" placeholder="שם פרטי">
+        <input type="text" id="lastName" placeholder="שם משפחה">
+        <input type="tel" id="phone" placeholder="טלפון">
+        <input type="email" id="email" placeholder="אימייל">
+        <div class="file-input">
+            <label>תמונת פרופיל:</label>
+            <input type="file" id="imageInput" accept="image/*">
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-add" id="addBtn" onclick="addContact()">הוסף איש קשר</button>
+        <button class="btn-update" id="updateBtn" onclick="saveUpdate()">שמור עדכון</button>
+        <button class="btn-cancel" id="cancelBtn" onclick="resetForm()">ביטול</button>
+    </div>
+
+    <table id="phoneBook">
+        <thead>
+            <tr>
+                <th>תמונה</th>
+                <th>שם מלא</th>
+                <th>טלפון</th>
+                <th>אימייל</th>
+                <th>פעולות</th>
+            </tr>
+        </thead>
+        <tbody id="contactList"></tbody>
+    </table>
+</div>
+
+<script>
+    let contacts = [];
+    let editIndex = null;
+    const defaultImg = "https://placeholder.com"; // תמונה ברירת מחדל
+
+    function addContact() {
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        const phone = document.getElementById('phone').value;
+        const email = document.getElementById('email').value;
+        const imageFile = document.getElementById('imageInput').files[0];
+
+        if (!firstName || !lastName || !phone) {
+            alert("נא למלא לפחות שם וטלפון");
+            return;
+        }
+
+        if (imageFile) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                contacts.push({ firstName, lastName, phone, email, img: e.target.result });
+                renderTable();
+                resetForm();
+            };
+            reader.readAsDataURL(imageFile);
+        } else {
+            contacts.push({ firstName, lastName, phone, email, img: defaultImg });
+            renderTable();
+            resetForm();
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('contactList');
+        const filter = document.getElementById('searchInput').value.toLowerCase();
+        tbody.innerHTML = "";
+
+        contacts.forEach((contact, index) => {
+            const fullName = (contact.firstName + " " + contact.lastName).toLowerCase();
+            if (fullName.includes(filter) || contact.phone.includes(filter) || contact.email.toLowerCase().includes(filter)) {
+                const row = `<tr>
+                    <td><img src="${contact.img}" class="contact-img"></td>
+                    <td>${contact.firstName} ${contact.lastName}</td>
+                    <td>${contact.phone}</td>
+                    <td>${contact.email}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editContact(${index})">ערוך</button>
+                        <button class="btn-delete" onclick="deleteContact(${index})">מחק</button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += row;
+            }
+        });
+    }
+
+    function deleteContact(index) {
+        if (confirm("למחוק איש קשר זה?")) {
+            contacts.splice(index, 1);
+            renderTable();
+        }
+    }
+
+    function editContact(index) {
+        editIndex = index;
+        const contact = contacts[index];
+        document.getElementById('firstName').value = contact.firstName;
+        document.getElementById('lastName').value = contact.lastName;
+        document.getElementById('phone').value = contact.phone;
+        document.getElementById('email').value = contact.email;
+
+        document.getElementById('addBtn').style.display = 'none';
+        document.getElementById('updateBtn').style.display = 'inline-block';
+        document.getElementById('cancelBtn').style.display = 'inline-block';
+    }
+
+    function saveUpdate() {
+        const imageFile = document.getElementById('imageInput').files[0];
+        const updateData = () => {
+            contacts[editIndex].firstName = document.getElementById('firstName').value;
+            contacts[editIndex].lastName = document.getElementById('lastName').value;
+            contacts[editIndex].phone = document.getElementById('phone').value;
+            contacts[editIndex].email = document.getElementById('email').value;
+            renderTable();
+            resetForm();
+        };
+
+        if (imageFile) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                contacts[editIndex].img = e.target.result;
+                updateData();
+            };
+            reader.readAsDataURL(imageFile);
+        } else {
+            updateData();
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('firstName').value = "";
+        document.getElementById('lastName').value = "";
+        document.getElementById('phone').value = "";
+        document.getElementById('email').value = "";
+        document.getElementById('imageInput').value = "";
+        editIndex = null;
+        document.getElementById('addBtn').style.display = 'inline-block';
+        document.getElementById('updateBtn').style.display = 'none';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
